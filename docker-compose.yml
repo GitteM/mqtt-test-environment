@@ -1,0 +1,50 @@
+services:
+  # MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883" # MQTT port
+      - "9001:9001" # WebSocket port (for web clients)
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+    networks:
+      - mqtt-network
+
+  # Temperature Sensor Simulator
+  temp-simulator:
+    build: .
+    container_name: mqtt-temp-simulator
+    command: python temp_simulator.py
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    networks:
+      - mqtt-network
+
+  # Light Simulator
+  light-simulator:
+    build: .
+    container_name: mqtt-light-simulator
+    command: python light_simulator.py
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    networks:
+      - mqtt-network
+
+  # MQTT Client for Testing (optional)
+  mqtt-client:
+    build: .
+    container_name: mqtt-test-client
+    command: python mqtt_test_client.py
+    depends_on:
+      - mosquitto
+    restart: "no"
+    networks:
+      - mqtt-network
+
+networks:
+  mqtt-network:
+    driver: bridge
